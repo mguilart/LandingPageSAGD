@@ -1,0 +1,2054 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SAGD — Sistema Automatizado de Gestión Documental</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,900;1,600&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0c1829;
+  --navy2:#0f1e36;
+  --navy3:#162a46;
+  --navy4:#1a3355;
+  --gold:#c8962a;
+  --gold2:#dda83b;
+  --gold3:#f0c060;
+  --gold-dim:rgba(200,150,42,.15);
+  --gold-dim2:rgba(200,150,42,.08);
+  --text:#dce8f5;
+  --text2:#7fa8cc;
+  --text3:#3d5c7a;
+  --white:#fff;
+  --bg-light:#f4f6f9;
+  --cp:#ffffff;
+  --cb:#e1e6ef;
+  --ct:#0c1a2e;
+  --ct2:#4a5e78;
+  --danger:#c0392b;
+  --success:#1a7a4a;
+  --info:#1d5fa0;
+  --r-sm:5px;--r-md:8px;--r-lg:12px;--r-xl:16px;--r-2xl:24px;
+  --shadow-gold:0 8px 32px rgba(200,150,42,.25);
+  --shadow-navy:0 12px 48px rgba(12,26,46,.4);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+
+html{scroll-behavior:smooth}
+
+body{
+  font-family:'IBM Plex Sans',sans-serif;
+  background:var(--navy);
+  color:var(--text);
+  line-height:1.6;
+  overflow-x:hidden;
+}
+
+/* ── NOISE TEXTURE ─── */
+body::before{
+  content:'';
+  position:fixed;inset:0;pointer-events:none;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  opacity:.4;z-index:0;
+}
+
+/* ── SCROLL ANIMATIONS ─── */
+.reveal{opacity:0;transform:translateY(32px);transition:opacity .7s ease,transform .7s ease}
+.reveal.visible{opacity:1;transform:none}
+.reveal-left{opacity:0;transform:translateX(-32px);transition:opacity .7s ease,transform .7s ease}
+.reveal-left.visible{opacity:1;transform:none}
+.reveal-right{opacity:0;transform:translateX(32px);transition:opacity .7s ease,transform .7s ease}
+.reveal-right.visible{opacity:1;transform:none}
+
+/* ── NAV ─── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  padding:0 48px;height:68px;
+  display:flex;align-items:center;gap:20px;
+  background:rgba(12,24,41,.85);
+  backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(255,255,255,.06);
+  transition:all .3s;
+}
+nav.scrolled{
+  background:rgba(10,18,30,.95);
+  box-shadow:0 4px 24px rgba(0,0,0,.35);
+}
+.nav-logo{
+  display:flex;align-items:center;gap:12px;
+  text-decoration:none;
+}
+.nav-logo-icon{
+  width:38px;height:38px;border-radius:10px;
+  background:var(--gold-dim);border:1px solid rgba(200,150,42,.35);
+  display:flex;align-items:center;justify-content:center;font-size:1.1rem;
+  box-shadow:0 2px 8px rgba(0,0,0,.2);
+}
+.nav-logo-text{
+  font-family:'Playfair Display',serif;
+  font-size:1.2rem;font-weight:700;color:var(--gold2);
+}
+.nav-links{
+  display:flex;gap:8px;margin-left:auto;align-items:center;
+}
+.nav-link{
+  font-size:13px;color:var(--text2);padding:8px 16px;
+  border-radius:var(--r-sm);text-decoration:none;
+  transition:all .15s;
+}
+.nav-link:hover{color:var(--text);background:rgba(255,255,255,.05)}
+.nav-cta{
+  background:var(--gold);color:#fff;font-weight:600;
+  padding:9px 20px;border-radius:var(--r-md);
+  text-decoration:none;font-size:13px;
+  box-shadow:0 2px 10px rgba(200,150,42,.35);
+  transition:all .2s;
+}
+.nav-cta:hover{background:var(--gold2);box-shadow:var(--shadow-gold);transform:translateY(-1px)}
+
+/* ── HERO ─── */
+#hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  text-align:center;
+  padding:120px 32px 80px;
+  position:relative;overflow:hidden;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 0%,rgba(26,51,85,.8) 0%,transparent 70%),
+    radial-gradient(ellipse 50% 40% at 80% 100%,rgba(200,150,42,.08) 0%,transparent 60%),
+    linear-gradient(180deg,var(--navy2) 0%,var(--navy) 100%);
+}
+
+/* Animated grid background */
+#hero::before{
+  content:'';
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+  background-size:48px 48px;
+  mask-image:radial-gradient(ellipse 80% 60% at 50% 50%,black 30%,transparent 80%);
+  animation:gridDrift 20s linear infinite;
+}
+@keyframes gridDrift{
+  from{background-position:0 0}
+  to{background-position:0 48px}
+}
+
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--gold-dim);border:1px solid rgba(200,150,42,.3);
+  border-radius:30px;padding:6px 18px 6px 10px;
+  font-size:12px;color:var(--gold2);font-weight:500;
+  margin-bottom:32px;
+  animation:fadeUp .8s .2s both;
+}
+.hero-badge-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--gold);
+  box-shadow:0 0 8px var(--gold);
+  animation:pulse 2s infinite;
+}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+.hero-title{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2.8rem,7vw,5.5rem);
+  font-weight:900;
+  line-height:1.05;
+  letter-spacing:-.03em;
+  color:var(--white);
+  margin-bottom:12px;
+  animation:fadeUp .8s .35s both;
+}
+.hero-title span{
+  color:var(--gold2);
+  font-style:italic;
+}
+.hero-sub{
+  font-size:clamp(.95rem,2vw,1.25rem);
+  color:var(--text2);
+  max-width:640px;
+  margin:0 auto 40px;
+  font-weight:300;
+  line-height:1.7;
+  animation:fadeUp .8s .5s both;
+}
+.hero-actions{
+  display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
+  animation:fadeUp .8s .65s both;
+}
+.btn-hero-primary{
+  background:var(--gold);color:#fff;font-weight:700;
+  padding:14px 32px;border-radius:var(--r-md);
+  text-decoration:none;font-size:14px;
+  box-shadow:var(--shadow-gold);
+  transition:all .2s;border:none;cursor:pointer;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-hero-primary:hover{background:var(--gold2);transform:translateY(-2px);box-shadow:0 16px 48px rgba(200,150,42,.4)}
+.btn-hero-secondary{
+  background:rgba(255,255,255,.06);color:var(--text);
+  border:1px solid rgba(255,255,255,.15);
+  padding:14px 32px;border-radius:var(--r-md);
+  text-decoration:none;font-size:14px;
+  transition:all .2s;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-hero-secondary:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25)}
+
+.hero-metrics{
+  display:flex;gap:48px;justify-content:center;flex-wrap:wrap;
+  margin-top:72px;padding-top:48px;
+  border-top:1px solid rgba(255,255,255,.07);
+  animation:fadeUp .8s .8s both;
+}
+.hero-metric{text-align:center}
+.hero-metric-val{
+  font-family:'Playfair Display',serif;
+  font-size:2.8rem;font-weight:700;
+  color:var(--gold2);line-height:1;
+  font-variant-numeric:tabular-nums;
+}
+.hero-metric-lbl{
+  font-size:12px;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.1em;
+  margin-top:8px;font-weight:600;
+}
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(24px)}
+  to{opacity:1;transform:none}
+}
+
+/* ── SECTION COMMONS ─── */
+section{padding:100px 32px;position:relative;z-index:1}
+.container{max-width:1160px;margin:0 auto}
+.section-label{
+  font-size:11px;color:var(--gold);text-transform:uppercase;
+  letter-spacing:.18em;font-weight:700;font-family:'IBM Plex Mono',monospace;
+  margin-bottom:14px;
+}
+.section-title{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2rem,4vw,3.2rem);
+  font-weight:700;line-height:1.15;
+  color:var(--white);
+  letter-spacing:-.02em;
+  margin-bottom:18px;
+}
+.section-desc{
+  font-size:1.05rem;color:var(--text2);
+  max-width:580px;line-height:1.75;font-weight:300;
+}
+.divider-gold{
+  width:48px;height:3px;
+  background:linear-gradient(90deg,var(--gold),transparent);
+  border-radius:2px;margin:22px 0;
+}
+
+/* ── LOGOS STRIP ─── */
+#logos{
+  padding:48px 32px;
+  background:rgba(255,255,255,.025);
+  border-top:1px solid rgba(255,255,255,.05);
+  border-bottom:1px solid rgba(255,255,255,.05);
+  overflow:hidden;
+}
+.logos-title{
+  text-align:center;font-size:11px;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.14em;font-weight:600;
+  margin-bottom:32px;
+}
+.logos-track{
+  display:flex;gap:60px;align-items:center;
+  animation:scrollLogos 28s linear infinite;
+  width:max-content;
+}
+@keyframes scrollLogos{
+  from{transform:translateX(0)}
+  to{transform:translateX(-50%)}
+}
+.logo-item{
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;color:var(--text3);font-weight:600;
+  white-space:nowrap;letter-spacing:.04em;
+  text-transform:uppercase;
+  padding:10px 20px;
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:8px;
+  background:rgba(255,255,255,.02);
+}
+.logo-item span{font-size:1.3rem}
+
+/* ── FEATURES BIG ─── */
+#features{
+  background:linear-gradient(180deg,var(--navy) 0%,var(--navy2) 100%);
+}
+.features-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:24px;
+  margin-top:64px;
+}
+.feature-card{
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:var(--r-2xl);
+  padding:32px 28px;
+  transition:all .3s;
+  position:relative;
+  overflow:hidden;
+}
+.feature-card::before{
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(200,150,42,.4),transparent);
+  opacity:0;transition:opacity .3s;
+}
+.feature-card:hover{
+  background:rgba(255,255,255,.055);
+  border-color:rgba(200,150,42,.2);
+  transform:translateY(-4px);
+  box-shadow:0 20px 60px rgba(0,0,0,.35),0 0 0 1px rgba(200,150,42,.1);
+}
+.feature-card:hover::before{opacity:1}
+.feature-icon{
+  width:52px;height:52px;border-radius:var(--r-lg);
+  background:var(--gold-dim);border:1px solid rgba(200,150,42,.25);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;margin-bottom:20px;
+  transition:all .3s;
+}
+.feature-card:hover .feature-icon{
+  background:rgba(200,150,42,.22);
+  box-shadow:0 4px 16px rgba(200,150,42,.25);
+}
+.feature-title{
+  font-size:1.05rem;font-weight:600;color:var(--white);
+  margin-bottom:10px;line-height:1.3;
+}
+.feature-desc{
+  font-size:.875rem;color:var(--text2);line-height:1.7;font-weight:300;
+}
+.feature-card.highlight{
+  background:linear-gradient(135deg,rgba(200,150,42,.1) 0%,rgba(200,150,42,.04) 100%);
+  border-color:rgba(200,150,42,.25);
+}
+.feature-tag{
+  display:inline-block;
+  margin-top:18px;
+  font-size:10px;font-family:'IBM Plex Mono',monospace;
+  color:var(--gold);background:var(--gold-dim2);
+  border:1px solid rgba(200,150,42,.2);
+  padding:3px 10px;border-radius:20px;letter-spacing:.06em;
+  text-transform:uppercase;
+}
+
+/* ── MODULES ─── */
+#modules{
+  background:var(--navy2);
+}
+.modules-wrapper{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:64px;align-items:start;
+  margin-top:64px;
+}
+.module-list{display:flex;flex-direction:column;gap:4px}
+.module-item{
+  display:flex;align-items:center;gap:16px;
+  padding:16px 20px;border-radius:var(--r-lg);
+  cursor:pointer;transition:all .2s;
+  border:1px solid transparent;
+}
+.module-item:hover,.module-item.active{
+  background:rgba(200,150,42,.08);
+  border-color:rgba(200,150,42,.15);
+}
+.module-item.active .module-num{
+  background:var(--gold);color:#fff;
+}
+.module-num{
+  width:32px;height:32px;border-radius:8px;
+  background:rgba(255,255,255,.06);
+  display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-family:'IBM Plex Mono',monospace;
+  color:var(--text3);font-weight:500;flex-shrink:0;
+  transition:all .2s;
+}
+.module-info{flex:1}
+.module-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
+.module-brief{font-size:11px;color:var(--text3)}
+
+.module-detail{
+  position:sticky;top:100px;
+}
+.module-detail-card{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:var(--r-2xl);
+  padding:40px 36px;
+  min-height:480px;
+  display:flex;flex-direction:column;
+}
+.module-detail-icon{font-size:2.8rem;margin-bottom:20px}
+.module-detail-code{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  color:var(--gold);background:var(--gold-dim2);
+  border:1px solid rgba(200,150,42,.2);
+  padding:4px 10px;border-radius:20px;
+  display:inline-block;margin-bottom:14px;
+  letter-spacing:.08em;text-transform:uppercase;
+}
+.module-detail-title{
+  font-family:'Playfair Display',serif;
+  font-size:1.7rem;font-weight:700;color:var(--white);
+  margin-bottom:14px;
+}
+.module-detail-desc{
+  font-size:.9rem;color:var(--text2);line-height:1.8;
+  font-weight:300;margin-bottom:28px;flex:1;
+}
+.module-detail-features{
+  display:flex;flex-direction:column;gap:10px;
+}
+.mdf{
+  display:flex;align-items:center;gap:10px;
+  font-size:13px;color:var(--text);
+}
+.mdf::before{
+  content:'';width:6px;height:6px;border-radius:50%;
+  background:var(--gold);flex-shrink:0;
+}
+
+/* ── ISO COMPLIANCE ─── */
+#compliance{
+  background:linear-gradient(135deg,var(--navy2) 0%,var(--navy3) 100%);
+  position:relative;overflow:hidden;
+}
+#compliance::before{
+  content:'';position:absolute;
+  top:-120px;right:-120px;
+  width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(200,150,42,.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+.compliance-inner{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:80px;align-items:center;
+}
+.iso-list{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:16px;margin-top:40px;
+}
+.iso-card{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:var(--r-lg);padding:20px;
+  transition:all .25s;
+}
+.iso-card:hover{
+  border-color:rgba(200,150,42,.2);
+  background:rgba(200,150,42,.05);
+  transform:scale(1.02);
+}
+.iso-num{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.75rem;color:var(--gold);font-weight:500;
+  margin-bottom:6px;
+}
+.iso-name{font-size:.78rem;color:var(--text2);line-height:1.4;font-weight:400}
+
+.ve-laws{margin-top:40px}
+.ve-title{
+  font-size:11px;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.12em;font-weight:700;
+  margin-bottom:16px;
+}
+.law-tags{display:flex;flex-wrap:wrap;gap:8px}
+.law-tag{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  color:var(--text2);background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.1);
+  padding:5px 12px;border-radius:20px;
+  letter-spacing:.05em;
+}
+
+.compliance-visual{
+  display:flex;flex-direction:column;gap:20px;
+}
+.compliance-stat{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:var(--r-xl);
+  padding:24px 28px;
+  display:flex;align-items:center;gap:20px;
+  transition:all .25s;
+}
+.compliance-stat:hover{
+  background:rgba(255,255,255,.07);
+  border-color:rgba(200,150,42,.2);
+}
+.cs-icon{
+  width:48px;height:48px;border-radius:var(--r-md);
+  background:var(--gold-dim);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.3rem;flex-shrink:0;
+}
+.cs-val{
+  font-family:'Playfair Display',serif;
+  font-size:1.8rem;font-weight:700;color:var(--gold2);
+}
+.cs-lbl{font-size:12px;color:var(--text2);margin-top:2px}
+
+/* ── ROLES ─── */
+#roles{background:var(--navy)}
+.roles-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:24px;margin-top:64px;
+}
+.role-card{
+  background:rgba(255,255,255,.03);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:var(--r-2xl);
+  padding:36px 28px;
+  text-align:center;
+  transition:all .3s;
+  position:relative;overflow:hidden;
+}
+.role-card::after{
+  content:'';
+  position:absolute;bottom:0;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,var(--gold),transparent);
+  opacity:0;transition:opacity .3s;
+}
+.role-card:hover{
+  transform:translateY(-6px);
+  background:rgba(255,255,255,.05);
+  border-color:rgba(200,150,42,.15);
+  box-shadow:0 24px 60px rgba(0,0,0,.4);
+}
+.role-card:hover::after{opacity:1}
+.role-avatar{
+  width:64px;height:64px;border-radius:50%;
+  background:var(--gold-dim);border:2px solid rgba(200,150,42,.3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.8rem;margin:0 auto 20px;
+  box-shadow:0 4px 16px rgba(200,150,42,.2);
+}
+.role-name{
+  font-size:1.1rem;font-weight:600;color:var(--white);
+  margin-bottom:8px;
+}
+.role-code{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;
+  color:var(--gold);letter-spacing:.1em;text-transform:uppercase;
+  margin-bottom:16px;
+}
+.role-desc{font-size:.875rem;color:var(--text2);line-height:1.7;font-weight:300}
+.role-perms{
+  margin-top:24px;display:flex;flex-direction:column;gap:8px;
+  text-align:left;
+}
+.perm{
+  display:flex;align-items:center;gap:8px;
+  font-size:12px;color:var(--text2);
+}
+.perm-icon{width:20px;height:20px;border-radius:5px;background:rgba(26,122,74,.15);border:1px solid rgba(26,122,74,.25);display:flex;align-items:center;justify-content:center;font-size:10px;flex-shrink:0}
+.perm.denied .perm-icon{background:rgba(192,57,43,.1);border-color:rgba(192,57,43,.2)}
+
+/* ── TESTIMONIALS ─── */
+#testimonials{
+  background:var(--navy2);
+}
+.testimonials-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:24px;margin-top:64px;
+}
+.tcard{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:var(--r-2xl);padding:32px;
+  transition:all .25s;
+  position:relative;
+}
+.tcard:hover{
+  background:rgba(255,255,255,.06);
+  border-color:rgba(200,150,42,.15);
+}
+.tcard-quote{
+  font-size:2.5rem;color:var(--gold);line-height:1;
+  margin-bottom:16px;font-family:'Playfair Display',serif;
+}
+.tcard-text{
+  font-size:.9rem;color:var(--text2);line-height:1.8;
+  font-weight:300;font-style:italic;margin-bottom:24px;
+}
+.tcard-author{display:flex;align-items:center;gap:12px;padding-top:20px;border-top:1px solid rgba(255,255,255,.07)}
+.tcard-avatar{
+  width:40px;height:40px;border-radius:50%;
+  background:var(--gold-dim);border:1px solid rgba(200,150,42,.3);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.85rem;font-weight:700;color:var(--gold2);
+  flex-shrink:0;font-family:'Playfair Display',serif;
+}
+.tcard-name{font-size:13px;font-weight:600;color:var(--text)}
+.tcard-role{font-size:11px;color:var(--text3);margin-top:2px}
+
+/* ── CTA ─── */
+#cta{
+  background:linear-gradient(135deg,var(--navy3) 0%,var(--navy2) 50%,var(--navy) 100%);
+  text-align:center;position:relative;overflow:hidden;
+}
+#cta::before{
+  content:'';position:absolute;
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  width:700px;height:700px;border-radius:50%;
+  background:radial-gradient(circle,rgba(200,150,42,.08) 0%,transparent 65%);
+  pointer-events:none;
+}
+.cta-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(200,150,42,.1);border:1px solid rgba(200,150,42,.25);
+  border-radius:30px;padding:7px 20px;
+  font-size:12px;color:var(--gold2);font-weight:500;
+  margin-bottom:28px;
+}
+.cta-title{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2.2rem,5vw,4rem);
+  font-weight:900;line-height:1.1;
+  color:var(--white);letter-spacing:-.03em;
+  margin-bottom:20px;
+}
+.cta-title em{color:var(--gold2);font-style:italic}
+.cta-desc{
+  font-size:1.05rem;color:var(--text2);
+  max-width:560px;margin:0 auto 48px;
+  line-height:1.75;font-weight:300;
+}
+.cta-actions{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:60px}
+.cta-note{font-size:12px;color:var(--text3);font-family:'IBM Plex Mono',monospace}
+
+/* ── FOOTER ─── */
+footer{
+  background:var(--navy2);
+  border-top:1px solid rgba(255,255,255,.06);
+  padding:60px 32px 40px;
+}
+.footer-inner{
+  max-width:1160px;margin:0 auto;
+  display:grid;grid-template-columns:2fr 1fr 1fr 1fr;
+  gap:48px;
+}
+.footer-brand .brand-name{
+  font-family:'Playfair Display',serif;
+  font-size:1.6rem;font-weight:700;color:var(--gold2);
+  margin-bottom:8px;
+}
+.footer-brand .brand-tagline{
+  font-size:.8rem;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.1em;
+  font-family:'IBM Plex Mono',monospace;
+  margin-bottom:20px;
+}
+.footer-brand p{font-size:.85rem;color:var(--text3);line-height:1.7;max-width:280px}
+.footer-col-title{
+  font-size:11px;color:var(--text2);font-weight:700;
+  text-transform:uppercase;letter-spacing:.12em;
+  margin-bottom:20px;
+}
+.footer-col a{
+  display:block;font-size:.875rem;color:var(--text3);
+  text-decoration:none;margin-bottom:10px;
+  transition:color .15s;
+}
+.footer-col a:hover{color:var(--gold2)}
+.footer-bottom{
+  max-width:1160px;margin:48px auto 0;
+  padding-top:24px;border-top:1px solid rgba(255,255,255,.06);
+  display:flex;align-items:center;justify-content:space-between;
+  font-size:11px;color:var(--text3);flex-wrap:wrap;gap:12px;
+  font-family:'IBM Plex Mono',monospace;
+}
+.iso-strip{display:flex;gap:16px;flex-wrap:wrap}
+.iso-pill{
+  background:rgba(200,150,42,.08);
+  border:1px solid rgba(200,150,42,.15);
+  padding:4px 12px;border-radius:20px;
+  font-size:10px;color:var(--gold);
+}
+
+/* ── SCREENSHOT MOCKUP ─── */
+.mockup-wrap{
+  margin-top:72px;
+  position:relative;
+}
+.mockup-frame{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:16px;
+  overflow:hidden;
+  box-shadow:0 40px 120px rgba(0,0,0,.5),0 0 0 1px rgba(200,150,42,.08);
+  position:relative;
+}
+.mockup-titlebar{
+  background:rgba(12,18,29,.9);
+  padding:12px 20px;
+  display:flex;align-items:center;gap:8px;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.mockup-dots{display:flex;gap:6px}
+.mockup-dot{width:12px;height:12px;border-radius:50%}
+.mockup-screen{
+  background:linear-gradient(135deg,var(--navy2) 0%,var(--navy3) 100%);
+  padding:28px;
+  min-height:360px;
+  display:flex;gap:20px;
+}
+.mock-sidebar{
+  width:200px;flex-shrink:0;
+  background:rgba(12,18,29,.7);border:1px solid rgba(255,255,255,.06);
+  border-radius:10px;padding:16px;
+}
+.mock-sb-logo{
+  font-family:'Playfair Display',serif;color:var(--gold2);
+  font-size:1rem;font-weight:700;margin-bottom:20px;
+  padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,.07);
+}
+.mock-nav-item{
+  display:flex;align-items:center;gap:8px;
+  padding:7px 10px;border-radius:6px;
+  font-size:11px;color:var(--text3);margin-bottom:2px;
+}
+.mock-nav-item.active{
+  background:rgba(200,150,42,.1);color:var(--gold2);
+  border-left:2px solid var(--gold);
+}
+.mock-content{flex:1;display:flex;flex-direction:column;gap:14px}
+.mock-header{
+  font-family:'Playfair Display',serif;
+  font-size:1.1rem;color:var(--white);font-weight:700;
+}
+.mock-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.mock-kpi{
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:8px;padding:12px;
+}
+.mock-kpi-val{font-size:1.4rem;font-weight:300;color:var(--white);line-height:1}
+.mock-kpi-lbl{font-size:9px;color:var(--text3);margin-top:4px;text-transform:uppercase;letter-spacing:.07em}
+.mock-accent{position:absolute;top:0;left:0;width:3px;height:100%;border-radius:0}
+.mock-kpi-w{border-left:3px solid var(--info);padding-left:10px}
+.mock-kpi-g{border-left:3px solid var(--gold)}
+.mock-kpi-s{border-left:3px solid var(--success)}
+.mock-kpi-r{border-left:3px solid var(--danger)}
+.mock-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.mock-card{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:8px;padding:14px;
+}
+.mock-card-title{font-size:10px;color:var(--text2);margin-bottom:8px;font-weight:600}
+.mock-bars{display:flex;flex-direction:column;gap:5px}
+.mock-bar-row{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--text3)}
+.mock-bar-track{flex:1;height:4px;background:rgba(255,255,255,.07);border-radius:2px}
+.mock-bar-fill{height:100%;border-radius:2px;background:var(--gold)}
+
+/* ── RESPONSIVE ─── */
+@media(max-width:900px){
+  nav{padding:0 20px}
+  .nav-links a:not(.nav-cta){display:none}
+  .features-grid{grid-template-columns:1fr}
+  .modules-wrapper{grid-template-columns:1fr;gap:32px}
+  .module-detail{position:static}
+  .compliance-inner{grid-template-columns:1fr;gap:40px}
+  .roles-grid{grid-template-columns:1fr}
+  .testimonials-grid{grid-template-columns:1fr}
+  .footer-inner{grid-template-columns:1fr 1fr;gap:32px}
+  .mock-sidebar{display:none}
+  .mock-kpis{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  section{padding:72px 20px}
+  .hero-metrics{gap:28px}
+  .iso-list{grid-template-columns:1fr}
+  .footer-inner{grid-template-columns:1fr}
+  .footer-bottom{flex-direction:column;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-icon">🗂️</div>
+    <div class="nav-logo-text">SAGD</div>
+  </a>
+  <div class="nav-links">
+    <a href="#features" class="nav-link">Funcionalidades</a>
+    <a href="#modules" class="nav-link">Módulos</a>
+    <a href="#compliance" class="nav-link">Cumplimiento</a>
+    <a href="#roles" class="nav-link">Roles</a>
+    <a href="#" onclick="openDemoModal('nav');return false;" class="nav-cta">Solicitar demo →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-badge">
+    <span class="hero-badge-dot"></span>
+    Sistema Automatizado de Gestión Documental — v7
+  </div>
+  <h1 class="hero-title">
+    Control total<br>sobre su <span>archivo corporativo</span>
+  </h1>
+  <p class="hero-sub">
+    SAGD centraliza, clasifica y protege la información documental de su organización bajo los más rigurosos estándares ISO, con trazabilidad completa y cumplimiento normativo venezolano integrado.
+  </p>
+  <div class="hero-actions">
+    <button onclick="openDemoModal('hero')" class="btn-hero-primary">🚀 Solicitar demostración gratuita</button>
+    <a href="#modules" class="btn-hero-secondary">Explorar módulos →</a>
+  </div>
+
+  <div class="hero-metrics">
+    <div class="hero-metric">
+      <div class="hero-metric-val" data-target="15">0</div>
+      <div class="hero-metric-lbl">Módulos integrados</div>
+    </div>
+    <div class="hero-metric">
+      <div class="hero-metric-val" data-target="3">0</div>
+      <div class="hero-metric-lbl">Estándares ISO activos</div>
+    </div>
+    <div class="hero-metric">
+      <div class="hero-metric-val" data-target="100">0</div>
+      <div class="hero-metric-lbl" style="white-space:nowrap">% Trazabilidad documental</div>
+    </div>
+    <div class="hero-metric">
+      <div class="hero-metric-val" data-target="5">0</div>
+      <div class="hero-metric-lbl">Normativas VE cubiertas</div>
+    </div>
+  </div>
+
+  <!-- Mockup -->
+  <div class="mockup-wrap container reveal">
+    <div class="mockup-frame">
+      <div class="mockup-titlebar">
+        <div class="mockup-dots">
+          <div class="mockup-dot" style="background:#ff5f57"></div>
+          <div class="mockup-dot" style="background:#febc2e"></div>
+          <div class="mockup-dot" style="background:#28c840"></div>
+        </div>
+        <div style="flex:1;text-align:center;font-size:11px;color:var(--text3);font-family:'IBM Plex Mono',monospace;">
+          SAGD v7 — Panel de Control Central
+        </div>
+      </div>
+      <div class="mockup-screen">
+        <div class="mock-sidebar">
+          <div class="mock-sb-logo">SAGD</div>
+          <div class="mock-nav-item active">📊 Panel de Control</div>
+          <div class="mock-nav-item">📥 Captura</div>
+          <div class="mock-nav-item">🗂️ Clasificación</div>
+          <div class="mock-nav-item">🏷️ Metadatos</div>
+          <div class="mock-nav-item">🗓️ Retención</div>
+          <div class="mock-nav-item">🔐 Seguridad</div>
+          <div class="mock-nav-item">🔍 Búsqueda</div>
+          <div class="mock-nav-item">🗄️ Preservación</div>
+          <div class="mock-nav-item">📋 Auditoría</div>
+        </div>
+        <div class="mock-content">
+          <div class="mock-header">Panel de Control Central</div>
+          <div class="mock-kpis">
+            <div class="mock-kpi mock-kpi-w">
+              <div class="mock-kpi-val">248</div>
+              <div class="mock-kpi-lbl">Total documentos</div>
+            </div>
+            <div class="mock-kpi mock-kpi-g">
+              <div class="mock-kpi-val">14</div>
+              <div class="mock-kpi-lbl">Pendientes revisión</div>
+            </div>
+            <div class="mock-kpi mock-kpi-s">
+              <div class="mock-kpi-val">201</div>
+              <div class="mock-kpi-lbl">Vigentes / Finales</div>
+            </div>
+            <div class="mock-kpi mock-kpi-r">
+              <div class="mock-kpi-val">7</div>
+              <div class="mock-kpi-lbl">Próx. a vencer</div>
+            </div>
+          </div>
+          <div class="mock-cards">
+            <div class="mock-card">
+              <div class="mock-card-title">Documentos por área</div>
+              <div class="mock-bars">
+                <div class="mock-bar-row"><span style="width:60px">Contratos</span><div class="mock-bar-track"><div class="mock-bar-fill" style="width:85%"></div></div><span>85</span></div>
+                <div class="mock-bar-row"><span style="width:60px">RRHH</span><div class="mock-bar-track"><div class="mock-bar-fill" style="width:62%;background:#1d5fa0"></div></div><span>62</span></div>
+                <div class="mock-bar-row"><span style="width:60px">Finanzas</span><div class="mock-bar-track"><div class="mock-bar-fill" style="width:48%;background:#1a7a4a"></div></div><span>48</span></div>
+                <div class="mock-bar-row"><span style="width:60px">Dirección</span><div class="mock-bar-track"><div class="mock-bar-fill" style="width:35%;background:#6241a0"></div></div><span>35</span></div>
+              </div>
+            </div>
+            <div class="mock-card">
+              <div class="mock-card-title">Actividad reciente</div>
+              <div style="display:flex;flex-direction:column;gap:7px;">
+                <div style="font-size:9px;color:var(--text3);display:flex;gap:6px;align-items:center;"><span style="color:var(--success)">●</span> Contrato-0248 aprobado — hace 5 min</div>
+                <div style="font-size:9px;color:var(--text3);display:flex;gap:6px;align-items:center;"><span style="color:var(--gold)">●</span> RRHH-0103 en revisión — hace 18 min</div>
+                <div style="font-size:9px;color:var(--text3);display:flex;gap:6px;align-items:center;"><span style="color:var(--info)">●</span> Respaldo generado — hace 1 h</div>
+                <div style="font-size:9px;color:var(--text3);display:flex;gap:6px;align-items:center;"><span style="color:var(--danger)">●</span> Alerta retención #3 — hace 2 h</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- LOGOS STRIP -->
+<div id="logos">
+  <p class="logos-title">Diseñado para organizaciones que exigen cumplimiento de primer nivel</p>
+  <div style="overflow:hidden;position:relative">
+    <div class="logos-track" id="logos-track">
+      <div class="logo-item"><span>🏢</span> Banca y Finanzas</div>
+      <div class="logo-item"><span>⚕️</span> Salud</div>
+      <div class="logo-item"><span>🏛️</span> Sector Público</div>
+      <div class="logo-item"><span>⚖️</span> Despachos Jurídicos</div>
+      <div class="logo-item"><span>🏗️</span> Construcción</div>
+      <div class="logo-item"><span>📦</span> Manufactura</div>
+      <div class="logo-item"><span>🎓</span> Educación Superior</div>
+      <div class="logo-item"><span>🛢️</span> Energía</div>
+      <div class="logo-item"><span>🏢</span> Banca y Finanzas</div>
+      <div class="logo-item"><span>⚕️</span> Salud</div>
+      <div class="logo-item"><span>🏛️</span> Sector Público</div>
+      <div class="logo-item"><span>⚖️</span> Despachos Jurídicos</div>
+      <div class="logo-item"><span>🏗️</span> Construcción</div>
+      <div class="logo-item"><span>📦</span> Manufactura</div>
+      <div class="logo-item"><span>🎓</span> Educación Superior</div>
+      <div class="logo-item"><span>🛢️</span> Energía</div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section id="features">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">Funcionalidades principales</div>
+      <h2 class="section-title">Todo lo que su organización<br>necesita, en un solo sistema</h2>
+      <div class="divider-gold"></div>
+      <p class="section-desc">SAGD integra en una plataforma unificada todas las capacidades de gestión documental que exige el mercado corporativo moderno.</p>
+    </div>
+
+    <div class="features-grid">
+
+      <div class="feature-card highlight reveal" style="transition-delay:.05s">
+        <div class="feature-icon">📥</div>
+        <div class="feature-title">Captura y Registro Documental</div>
+        <div class="feature-desc">Ingrese documentos desde múltiples fuentes con asignación automática de código único, tipo, área, fecha y estado. Soporte a archivos adjuntos y carga masiva.</div>
+        <div class="feature-tag">M·1 · Captura</div>
+      </div>
+
+      <div class="feature-card reveal" style="transition-delay:.1s">
+        <div class="feature-icon">🗂️</div>
+        <div class="feature-title">Cuadro de Clasificación Documental</div>
+        <div class="feature-desc">CCD jerárquico configurable por su organización: series, subseries y tipos documentales. Árbol de clasificación con búsqueda instantánea y estadísticas por clase.</div>
+        <div class="feature-tag">M·2 · Clasificación</div>
+      </div>
+
+      <div class="feature-card reveal" style="transition-delay:.15s">
+        <div class="feature-icon">🏷️</div>
+        <div class="feature-title">Gestión Avanzada de Metadatos</div>
+        <div class="feature-desc">Plantillas de metadatos configurables por tipo documental. Campos obligatorios, validaciones, etiquetas libres y completitud automática calculada por documento.</div>
+        <div class="feature-tag">M·3 · Metadatos</div>
+      </div>
+
+      <div class="feature-card reveal" style="transition-delay:.2s">
+        <div class="feature-icon">🗓️</div>
+        <div class="feature-title">Retención y Disposición Documental</div>
+        <div class="feature-desc">Tablas de Retención Documental (TRD) con políticas de conservación, alerta automática de vencimientos y generación de Actas de Retención con firmas digitales.</div>
+        <div class="feature-tag">M·4 · Retención</div>
+      </div>
+
+      <div class="feature-card highlight reveal" style="transition-delay:.25s">
+        <div class="feature-icon">🔐</div>
+        <div class="feature-title">Seguridad y Control de Acceso</div>
+        <div class="feature-desc">Permisos granulares por rol (Administrador, Gestor, Auditor), cifrado de datos sensibles, bloqueo por intentos fallidos y auditoría de sesiones completa.</div>
+        <div class="feature-tag">M·5 · Seguridad</div>
+      </div>
+
+      <div class="feature-card reveal" style="transition-delay:.3s">
+        <div class="feature-icon">🔍</div>
+        <div class="feature-title">Búsqueda y Recuperación</div>
+        <div class="feature-desc">Motor de búsqueda full-text con filtros combinados por tipo, área, estado, fechas y metadatos. Resultados en tiempo real con vista previa y exportación directa.</div>
+        <div class="feature-tag">M·6 · Búsqueda</div>
+      </div>
+
+      <div class="feature-card reveal" style="transition-delay:.35s">
+        <div class="feature-icon">🗄️</div>
+        <div class="feature-title">Preservación Digital</div>
+        <div class="feature-desc">Verificación de integridad mediante checksums, migración de formatos obsoletos, monitoreo de obsolescencia tecnológica y planificación de preservación a largo plazo.</div>
+        <div class="feature-tag">M·7 · Preservación</div>
+      </div>
+
+      <div class="feature-card reveal" style="transition-delay:.4s">
+        <div class="feature-icon">📋</div>
+        <div class="feature-title">Auditoría e Informes</div>
+        <div class="feature-desc">Registro inmutable de todas las operaciones del sistema: quién, qué, cuándo y desde dónde. Exportación de informes en CSV y generación de actas certificadas.</div>
+        <div class="feature-tag">M·8 · Auditoría</div>
+      </div>
+
+      <div class="feature-card reveal" style="transition-delay:.45s">
+        <div class="feature-icon">🔄</div>
+        <div class="feature-title">Workflow Documental</div>
+        <div class="feature-desc">Flujos de aprobación configurables con estado Borrador → Revisión → Aprobado → Archivado. Control de versiones integrado con historial de cambios y autoría.</div>
+        <div class="feature-tag">M·W · Workflow</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- MODULES -->
+<section id="modules">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">Arquitectura modular</div>
+      <h2 class="section-title">Quince módulos especializados,<br>un ecosistema unificado</h2>
+      <div class="divider-gold"></div>
+      <p class="section-desc">Cada módulo de SAGD está diseñado bajo los principios de la norma ISO 15489, garantizando interoperabilidad y trazabilidad total entre todos sus componentes.</p>
+    </div>
+
+    <div class="modules-wrapper">
+      <div class="module-list" id="module-list">
+        <div class="module-item active" onclick="selectModule(0)">
+          <div class="module-num">M·0</div>
+          <div class="module-info">
+            <div class="module-name">Panel de Control Central</div>
+            <div class="module-brief">KPIs, actividad reciente y acciones rápidas</div>
+          </div>
+        </div>
+        <div class="module-item" onclick="selectModule(1)">
+          <div class="module-num">M·1</div>
+          <div class="module-info">
+            <div class="module-name">Captura y Registro</div>
+            <div class="module-brief">Ingreso estructurado de documentos</div>
+          </div>
+        </div>
+        <div class="module-item" onclick="selectModule(2)">
+          <div class="module-num">M·2</div>
+          <div class="module-info">
+            <div class="module-name">Clasificación Documental</div>
+            <div class="module-brief">CCD jerárquico configurable</div>
+          </div>
+        </div>
+        <div class="module-item" onclick="selectModule(3)">
+          <div class="module-num">M·3</div>
+          <div class="module-info">
+            <div class="module-name">Gestión de Metadatos</div>
+            <div class="module-brief">Plantillas y campos configurables</div>
+          </div>
+        </div>
+        <div class="module-item" onclick="selectModule(4)">
+          <div class="module-num">M·4</div>
+          <div class="module-info">
+            <div class="module-name">Retención y Disposición</div>
+            <div class="module-brief">TRD con alertas automáticas</div>
+          </div>
+        </div>
+        <div class="module-item" onclick="selectModule(5)">
+          <div class="module-num">M·5</div>
+          <div class="module-info">
+            <div class="module-name">Seguridad</div>
+            <div class="module-brief">Roles, permisos y auditoría de accesos</div>
+          </div>
+        </div>
+        <div class="module-item" onclick="selectModule(6)">
+          <div class="module-num">M·6</div>
+          <div class="module-info">
+            <div class="module-name">Búsqueda y Recuperación</div>
+            <div class="module-brief">Motor full-text con filtros avanzados</div>
+          </div>
+        </div>
+        <div class="module-item" onclick="selectModule(7)">
+          <div class="module-num">M·7</div>
+          <div class="module-info">
+            <div class="module-name">Preservación Digital</div>
+            <div class="module-brief">Integridad, checksums y migración</div>
+          </div>
+        </div>
+        <div class="module-item" onclick="selectModule(8)">
+          <div class="module-num">M·8</div>
+          <div class="module-info">
+            <div class="module-name">Auditoría e Informes</div>
+            <div class="module-brief">Registro inmutable de operaciones</div>
+          </div>
+        </div>
+        <div class="module-item" onclick="selectModule(9)">
+          <div class="module-num">M·9</div>
+          <div class="module-info">
+            <div class="module-name">Gestión de Respaldo</div>
+            <div class="module-brief">Exportación e importación de sesiones</div>
+          </div>
+        </div>
+        <div class="module-item" onclick="selectModule(10)">
+          <div class="module-num">M·10</div>
+          <div class="module-info">
+            <div class="module-name">Usuarios y Roles</div>
+            <div class="module-brief">Gestión completa de perfiles</div>
+          </div>
+        </div>
+        <div class="module-item" onclick="selectModule(11)">
+          <div class="module-num">M·W</div>
+          <div class="module-info">
+            <div class="module-name">Workflow Documental</div>
+            <div class="module-brief">Flujos de aprobación configurables</div>
+          </div>
+        </div>
+        <div class="module-item" onclick="selectModule(12)">
+          <div class="module-num">M·V</div>
+          <div class="module-info">
+            <div class="module-name">Control de Versiones</div>
+            <div class="module-brief">Historial completo de revisiones</div>
+          </div>
+        </div>
+        <div class="module-item" onclick="selectModule(13)">
+          <div class="module-num">M·E</div>
+          <div class="module-info">
+            <div class="module-name">Expedientes</div>
+            <div class="module-brief">Agrupación de documentos relacionados</div>
+          </div>
+        </div>
+        <div class="module-item" onclick="selectModule(14)">
+          <div class="module-num">M·P</div>
+          <div class="module-info">
+            <div class="module-name">Préstamos Documentales</div>
+            <div class="module-brief">Control de salida y devolución</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="module-detail reveal-right">
+        <div class="module-detail-card" id="module-detail-card">
+          <!-- populated by JS -->
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COMPLIANCE -->
+<section id="compliance">
+  <div class="container">
+    <div class="compliance-inner">
+      <div class="reveal-left">
+        <div class="section-label">Cumplimiento normativo</div>
+        <h2 class="section-title">Diseñado bajo<br>los mejores<br>estándares</h2>
+        <div class="divider-gold"></div>
+        <p class="section-desc">SAGD no es solo software; es una plataforma de cumplimiento que garantiza que su organización opere dentro del marco normativo nacional e internacional.</p>
+
+        <div class="iso-list">
+          <div class="iso-card">
+            <div class="iso-num">ISO 15489-1:2016</div>
+            <div class="iso-name">Gestión de documentos — Conceptos y principios</div>
+          </div>
+          <div class="iso-card">
+            <div class="iso-num">ISO 16175</div>
+            <div class="iso-name">Principios y requisitos funcionales para documentos</div>
+          </div>
+          <div class="iso-card">
+            <div class="iso-num">ISO 30300</div>
+            <div class="iso-name">Sistema de gestión para documentos</div>
+          </div>
+          <div class="iso-card">
+            <div class="iso-num">ISO 9001:2015</div>
+            <div class="iso-name">Módulo de control de calidad integrado</div>
+          </div>
+        </div>
+
+        <div class="ve-laws">
+          <div class="ve-title">🇻🇪 Normativa venezolana integrada</div>
+          <div class="law-tags">
+            <span class="law-tag">LOTTT</span>
+            <span class="law-tag">LIVA</span>
+            <span class="law-tag">ISLR</span>
+            <span class="law-tag">LOCGRSNCF</span>
+            <span class="law-tag">Código de Comercio</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="compliance-visual reveal-right">
+        <div class="compliance-stat">
+          <div class="cs-icon">🛡️</div>
+          <div>
+            <div class="cs-val">100%</div>
+            <div class="cs-lbl">Trazabilidad de operaciones — registro inmutable</div>
+          </div>
+        </div>
+        <div class="compliance-stat">
+          <div class="cs-icon">🔐</div>
+          <div>
+            <div class="cs-val">3 roles</div>
+            <div class="cs-lbl">Control de acceso granular por perfil de usuario</div>
+          </div>
+        </div>
+        <div class="compliance-stat">
+          <div class="cs-icon">📜</div>
+          <div>
+            <div class="cs-val">TRD</div>
+            <div class="cs-lbl">Tablas de Retención Documental con alertas automáticas</div>
+          </div>
+        </div>
+        <div class="compliance-stat">
+          <div class="cs-icon">📄</div>
+          <div>
+            <div class="cs-val">Actas</div>
+            <div class="cs-lbl">Generación automática de actas de retención certificadas</div>
+          </div>
+        </div>
+        <div class="compliance-stat">
+          <div class="cs-icon">🗄️</div>
+          <div>
+            <div class="cs-val">Checksums</div>
+            <div class="cs-lbl">Verificación de integridad digital en preservación</div>
+          </div>
+        </div>
+        <div class="compliance-stat">
+          <div class="cs-icon">💾</div>
+          <div>
+            <div class="cs-val">Respaldo</div>
+            <div class="cs-lbl">Exportación e importación completa del repositorio</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ROLES -->
+<section id="roles">
+  <div class="container">
+    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto">
+      <div class="section-label">Control de acceso</div>
+      <h2 class="section-title">Tres perfiles,<br>acceso granular</h2>
+      <div class="divider-gold" style="margin:20px auto"></div>
+      <p class="section-desc" style="margin:0 auto">Cada usuario accede únicamente a lo que su rol permite, con auditoría completa de toda actividad dentro del sistema.</p>
+    </div>
+
+    <div class="roles-grid">
+      <div class="role-card reveal" style="transition-delay:.05s">
+        <div class="role-avatar">👑</div>
+        <div class="role-name">Administrador</div>
+        <div class="role-code">admin · acceso total</div>
+        <div class="role-desc">Gestión completa de la plataforma: configuración, usuarios, respaldos, CCD, TRD y todas las operaciones del sistema.</div>
+        <div class="role-perms">
+          <div class="perm"><div class="perm-icon">✓</div> Crear y eliminar documentos</div>
+          <div class="perm"><div class="perm-icon">✓</div> Gestionar usuarios y roles</div>
+          <div class="perm"><div class="perm-icon">✓</div> Configurar CCD y TRD</div>
+          <div class="perm"><div class="perm-icon">✓</div> Exportar respaldos del sistema</div>
+          <div class="perm"><div class="perm-icon">✓</div> Acceso a todos los módulos</div>
+        </div>
+      </div>
+
+      <div class="role-card reveal" style="transition-delay:.15s">
+        <div class="role-avatar">📁</div>
+        <div class="role-name">Gestor Documental</div>
+        <div class="role-code">gestor · acceso operativo</div>
+        <div class="role-desc">Operaciones cotidianas de gestión documental: captura, clasificación, workflows, expedientes y control de préstamos.</div>
+        <div class="role-perms">
+          <div class="perm"><div class="perm-icon">✓</div> Capturar y editar documentos</div>
+          <div class="perm"><div class="perm-icon">✓</div> Gestionar expedientes</div>
+          <div class="perm"><div class="perm-icon">✓</div> Control de préstamos</div>
+          <div class="perm"><div class="perm-icon">✓</div> Gestión de versiones</div>
+          <div class="perm denied"><div class="perm-icon">✗</div> Configuración del sistema</div>
+        </div>
+      </div>
+
+      <div class="role-card reveal" style="transition-delay:.25s">
+        <div class="role-avatar">🔍</div>
+        <div class="role-name">Auditor</div>
+        <div class="role-code">auditor · solo lectura</div>
+        <div class="role-desc">Acceso de solo lectura al sistema completo. Puede consultar todos los registros, informes y logs de auditoría sin posibilidad de modificación.</div>
+        <div class="role-perms">
+          <div class="perm"><div class="perm-icon">✓</div> Consultar todos los documentos</div>
+          <div class="perm"><div class="perm-icon">✓</div> Ver registros de auditoría</div>
+          <div class="perm"><div class="perm-icon">✓</div> Exportar informes CSV</div>
+          <div class="perm denied"><div class="perm-icon">✗</div> Crear o modificar registros</div>
+          <div class="perm denied"><div class="perm-icon">✗</div> Cambiar configuración</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section id="testimonials">
+  <div class="container">
+    <div class="reveal" style="text-align:center;max-width:600px;margin:0 auto">
+      <div class="section-label">Lo que dicen nuestros clientes</div>
+      <h2 class="section-title">Confianza ganada,<br>resultados comprobados</h2>
+      <div class="divider-gold" style="margin:20px auto"></div>
+    </div>
+
+    <div class="testimonials-grid">
+      <div class="tcard reveal" style="transition-delay:.05s">
+        <div class="tcard-quote">"</div>
+        <div class="tcard-text">SAGD transformó por completo la manera en que manejamos los expedientes de nuestros clientes. La trazabilidad total y las alertas de retención nos evitaron serios problemas legales en más de una ocasión.</div>
+        <div class="tcard-author">
+          <div class="tcard-avatar">MR</div>
+          <div>
+            <div class="tcard-name">María Rodríguez</div>
+            <div class="tcard-role">Directora de Cumplimiento · Despacho Jurídico Andes</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tcard reveal" style="transition-delay:.15s">
+        <div class="tcard-quote">"</div>
+        <div class="tcard-text">La integración con las normativas venezolanas fue determinante para nuestra elección. No tuvimos que adaptar el sistema; el sistema ya venía adaptado a nuestra realidad operativa y legal.</div>
+        <div class="tcard-author">
+          <div class="tcard-avatar">JC</div>
+          <div>
+            <div class="tcard-name">Jorge Castillo</div>
+            <div class="tcard-role">Gerente de Operaciones · Corporación Industrial ALBA</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tcard reveal" style="transition-delay:.25s">
+        <div class="tcard-quote">"</div>
+        <div class="tcard-text">El módulo de auditoría nos dio por primera vez visibilidad total sobre quién accede a qué documento y cuándo. Para nuestro sector financiero, eso no es un lujo; es un requisito indispensable.</div>
+        <div class="tcard-author">
+          <div class="tcard-avatar">AP</div>
+          <div>
+            <div class="tcard-name">Andrea Pérez</div>
+            <div class="tcard-role">Oficial de Riesgo · Banco Mercantil Regional</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section id="cta">
+  <div class="container" style="position:relative;z-index:1;text-align:center">
+    <div class="reveal">
+      <div class="cta-badge">🚀 Disponible hoy</div>
+      <h2 class="cta-title">Lleve la gestión documental<br>de su empresa al <em>siguiente nivel</em></h2>
+      <p class="cta-desc">Solicite una demostración personalizada y descubra cómo SAGD puede transformar la eficiencia, el cumplimiento y la seguridad documental de su organización.</p>
+
+      <div class="cta-actions">
+        <button onclick="openDemoModal('cta')" class="btn-hero-primary">📋 Solicitar demostración gratuita</button>
+        <button onclick="openDemoModal('phone')" class="btn-hero-secondary">📞 Hablar con un especialista</button>
+      </div>
+
+      <p class="cta-note">✓ Sin compromiso &nbsp;·&nbsp; ✓ Demo personalizada en 48 h &nbsp;·&nbsp; ✓ Soporte incluido</p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="brand-name">SAGD</div>
+      <div class="brand-tagline">Sistema Automatizado de Gestión Documental v7</div>
+      <p>Plataforma corporativa de gestión documental diseñada bajo estándares ISO para organizaciones que exigen trazabilidad, cumplimiento y seguridad de primer nivel.</p>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Producto</div>
+      <a href="#features">Funcionalidades</a>
+      <a href="#modules">Módulos</a>
+      <a href="#compliance">Cumplimiento ISO</a>
+      <a href="#roles">Roles y permisos</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Sectores</div>
+      <a href="#">Banca y Finanzas</a>
+      <a href="#">Sector Público</a>
+      <a href="#">Salud</a>
+      <a href="#">Educación</a>
+      <a href="#">Industria</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-col-title">Contacto</div>
+      <a href="#" onclick="openDemoModal('email');return false;">info@sagd.ve</a>
+      <a href="#" onclick="openDemoModal('phone');return false;">+58 212 XXX-XXXX</a>
+      <a href="#">Caracas, Venezuela</a>
+      <a href="#" onclick="openDemoModal('footer');return false;">Solicitar demo</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 SAGD — Sistema Automatizado de Gestión Documental. Todos los derechos reservados.</span>
+    <div class="iso-strip">
+      <span class="iso-pill">ISO 15489-1:2016</span>
+      <span class="iso-pill">ISO 16175</span>
+      <span class="iso-pill">ISO 30300</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── MODULE DATA ──
+const modules = [
+  {
+    icon:'📊', code:'M·0', title:'Panel de Control Central',
+    desc:'Vista ejecutiva del estado del sistema en tiempo real. KPIs de documentos totales, pendientes de revisión, vigentes y alertas de vencimiento próximo. Gráfico de distribución por área, línea de actividad reciente y acciones rápidas.',
+    features:['KPIs en tiempo real actualizados automáticamente','Gráfico de documentos y expedientes por área','Timeline de actividad con filtro por cantidad','Alertas de vencimiento de retención','Acciones rápidas hacia todos los módulos','Exportación de informe ejecutivo en un clic']
+  },
+  {
+    icon:'📥', code:'M·1', title:'Captura y Registro Documental',
+    desc:'Módulo de ingreso estructurado de documentos con asignación automática de código único. Permite definir tipo, área organizacional, nivel de acceso, fechas, estado del ciclo de vida y adjuntar archivos físicos o digitales.',
+    features:['Código documental único autogenerado','Soporte multi-tipo: contratos, resoluciones, informes, etc.','Clasificación CCD vinculada al momento del registro','Adjuntos digitales y referencias a archivos físicos','Autoguardado automático durante la captura','Validación de campos obligatorios en tiempo real']
+  },
+  {
+    icon:'🗂️', code:'M·2', title:'Clasificación Documental — CCD',
+    desc:'Cuadro de Clasificación Documental jerárquico completamente configurable por su organización. Estructura de series y subseries con navegación visual en árbol, estadísticas de uso por clase y asignación de responsables.',
+    features:['Árbol CCD multinivel: series y subseries','Configuración libre de clases documentales','Estadísticas de documentos por categoría','Búsqueda instantánea dentro del árbol CCD','Indicadores de cobertura y uso por área','Vista de resumen con KPIs por clase']
+  },
+  {
+    icon:'🏷️', code:'M·3', title:'Gestión Avanzada de Metadatos',
+    desc:'Sistema de plantillas de metadatos configurables por tipo documental. Permite definir campos obligatorios, opcionales y con validación, calcular el porcentaje de completitud de cada documento y buscar por cualquier combinación de valores.',
+    features:['Plantillas personalizables por tipo de documento','Completitud de metadatos calculada por documento','Campos con validación de formato y tipo','Etiquetas libres para categorización flexible','Vista de semáforo de calidad documental','Búsqueda y filtro por valor de metadato']
+  },
+  {
+    icon:'🗓️', code:'M·4', title:'Retención y Disposición',
+    desc:'Módulo estratégico para el cumplimiento normativo de retención documental. Define Tablas de Retención Documental (TRD), asigna políticas por tipo de documento y genera alertas automáticas cuando el período de retención se aproxima o vence.',
+    features:['TRD configurable por tipo y área documental','Alertas automáticas de vencimiento próximo (≤180 días)','Panel de documentos vencidos con acción requerida','Generación de Actas de Retención certificadas','Disposición final: conservación, eliminación, digitalización','Exportación CSV del estado completo del repositorio']
+  },
+  {
+    icon:'🔐', code:'M·5', title:'Seguridad y Control de Acceso',
+    desc:'Sistema de seguridad multicapa con control de acceso basado en roles (RBAC). Cada operación queda registrada con usuario, IP y timestamp. Protección por bloqueo de sesión y gestión de contraseñas con estándares corporativos.',
+    features:['RBAC: Administrador, Gestor, Auditor','Bloqueo automático por intentos fallidos','Registro de sesiones con IP y hora exacta','Cifrado de información sensible de usuarios','Auditoría de acceso por documento específico','Configuración de expiración de sesión']
+  },
+  {
+    icon:'🔍', code:'M·6', title:'Búsqueda y Recuperación',
+    desc:'Motor de búsqueda full-text con soporte a filtros combinados. Localice cualquier documento en segundos por código, título, área, estado, tipo, fechas o valores de metadato. Vista previa inline sin necesidad de abrir el documento.',
+    features:['Búsqueda full-text en todos los campos','Filtros combinados: tipo, área, estado, fechas','Vista previa de resultados inline','Búsqueda guardada como plantilla reutilizable','Exportación de resultados en CSV','Ordenamiento por relevancia, fecha o código']
+  },
+  {
+    icon:'🗄️', code:'M·7', title:'Preservación Digital',
+    desc:'Módulo para la preservación a largo plazo del patrimonio documental digital. Verificación de integridad mediante checksums, detección de formatos obsoletos, planificación de migración y registro de cadena de custodia.',
+    features:['Verificación de integridad con checksum SHA','Inventario de formatos y obsolescencia detectada','Plan de migración a formatos de preservación','Cadena de custodia documental completa','Alertas de riesgo de pérdida tecnológica','Dashboard de salud del repositorio digital']
+  },
+  {
+    icon:'📋', code:'M·8', title:'Auditoría e Informes',
+    desc:'Registro inmutable y completo de todas las operaciones del sistema. Cada acción de cualquier usuario queda registrada con su identidad, módulo afectado, datos modificados, IP de acceso y marca de tiempo precisa.',
+    features:['Log de operaciones inmutable y continuo','Filtros por usuario, módulo, acción y fecha','Exportación de logs en CSV certificado','Estadísticas de operaciones por período','Informes de actividad por usuario y área','Detección de patrones anómalos de acceso']
+  },
+  {
+    icon:'💾', code:'M·9', title:'Gestión de Respaldo',
+    desc:'Sistema de respaldo y recuperación del repositorio documental completo. Exporta toda la base de datos del sistema en formato JSON estructurado para importación en otro equipo o como copia de seguridad corporativa.',
+    features:['Exportación completa del repositorio en JSON','Importación y restauración desde archivo','Verificación de integridad del respaldo','Historial de operaciones de respaldo','Soporte a sesiones múltiples recuperables','Compatibilidad con IndexedDB para persistencia']
+  },
+  {
+    icon:'👥', code:'M·10', title:'Usuarios y Roles',
+    desc:'Administración centralizada de todos los usuarios del sistema. Creación, edición y eliminación de cuentas, asignación de roles, gestión de contraseñas y visualización del estado de sesiones activas.',
+    features:['Alta, baja y modificación de usuarios','Asignación de roles con validación de permisos','Vista de actividad reciente por usuario','Gestión segura de contraseñas','Estadísticas de uso por perfil','Panel de usuarios activos en el sistema']
+  },
+  {
+    icon:'🔄', code:'M·W', title:'Workflow Documental',
+    desc:'Motor de flujos de trabajo para el ciclo de vida documental completo. Define etapas de revisión y aprobación, asigna responsables por paso y notifica automáticamente los cambios de estado con registro completo.',
+    features:['Flujo Borrador → Revisión → Aprobado → Archivado','Asignación de responsable por etapa','Notificación automática al cambio de estado','Historial completo del flujo de cada documento','Rechazo con justificación obligatoria','Integración con módulo de versiones']
+  },
+  {
+    icon:'🔖', code:'M·V', title:'Control de Versiones',
+    desc:'Gestión del historial completo de versiones de cada documento. Permite comparar versiones, restaurar anteriores, ver el árbol de revisiones y registrar el motivo de cada cambio con el usuario responsable.',
+    features:['Versionado automático en cada modificación','Historial completo con autor y marca de tiempo','Comparación entre versiones específicas','Restauración de versiones anteriores','Motivo de cambio obligatorio por revisión','Árbol visual de relación entre versiones']
+  },
+  {
+    icon:'🗃️', code:'M·E', title:'Expedientes',
+    desc:'Agrupación lógica de documentos relacionados en expedientes institucionales. Permite crear, gestionar y archivar expedientes con su conjunto de documentos vinculados, responsables y estado del proceso.',
+    features:['Creación de expedientes con código único','Vinculación de múltiples documentos por expediente','Estado del expediente: abierto, en proceso, cerrado','Responsable y área asignada por expediente','KPI de expedientes por estado en el dashboard','Búsqueda cruzada documento ↔ expediente']
+  },
+  {
+    icon:'📤', code:'M·P', title:'Control de Préstamos',
+    desc:'Sistema de control de salida y devolución de documentos físicos. Registra solicitante, propósito, fecha de salida y devolución esperada. Genera alertas de préstamos vencidos y mantiene el historial completo.',
+    features:['Registro de préstamo con solicitante y propósito','Fecha de devolución esperada con alertas','Panel de préstamos activos y vencidos','Historial completo por documento y usuario','Indicador de préstamos en el dashboard','Exportación del registro de préstamos']
+  }
+];
+
+function selectModule(idx){
+  const items = document.querySelectorAll('.module-item');
+  items.forEach((el,i)=>el.classList.toggle('active',i===idx));
+  const m = modules[idx];
+  document.getElementById('module-detail-card').innerHTML = `
+    <div class="module-detail-icon">${m.icon}</div>
+    <div class="module-detail-code">${m.code}</div>
+    <div class="module-detail-title">${m.title}</div>
+    <div class="module-detail-desc">${m.desc}</div>
+    <div class="module-detail-features">
+      ${m.features.map(f=>`<div class="mdf">${f}</div>`).join('')}
+    </div>
+  `;
+}
+selectModule(0);
+
+// ── NAV SCROLL ──
+window.addEventListener('scroll',()=>{
+  document.getElementById('navbar').classList.toggle('scrolled',scrollY>60);
+});
+
+// ── REVEAL ON SCROLL ──
+const observer = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){e.target.classList.add('visible')}
+  });
+},{threshold:.12,rootMargin:'0px 0px -40px 0px'});
+
+document.querySelectorAll('.reveal,.reveal-left,.reveal-right').forEach(el=>observer.observe(el));
+
+// ── COUNTER ANIMATION ──
+function animateCount(el,target,suffix=''){
+  let current=0;
+  const step = Math.ceil(target/50);
+  const timer = setInterval(()=>{
+    current = Math.min(current+step,target);
+    el.textContent = current + suffix;
+    if(current>=target) clearInterval(timer);
+  },30);
+}
+
+const metricObserver = new IntersectionObserver((entries)=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      document.querySelectorAll('[data-target]').forEach(el=>{
+        animateCount(el,parseInt(el.dataset.target));
+        el.removeAttribute('data-target');
+      });
+      metricObserver.disconnect();
+    }
+  });
+},{threshold:.5});
+
+const heroMetrics = document.querySelector('.hero-metrics');
+if(heroMetrics) metricObserver.observe(heroMetrics);
+</script>
+
+
+<!-- ══════════════ MODAL: SOLICITAR DEMO ══════════════ -->
+<div id="demo-modal-ov" aria-modal="true" role="dialog" aria-labelledby="demo-modal-title">
+  <div id="demo-modal">
+
+    <!-- Close -->
+    <button id="demo-modal-close" onclick="closeDemoModal()" aria-label="Cerrar">✕</button>
+
+    <!-- LEFT: branding panel -->
+    <div id="demo-modal-left">
+      <div class="dm-logo">🗂️</div>
+      <div class="dm-brand">SAGD</div>
+      <div class="dm-tagline">Sistema Automatizado de<br>Gestión Documental v7</div>
+      <div class="dm-divider"></div>
+      <div class="dm-points">
+        <div class="dm-point"><span class="dm-point-icon">✅</span><span>Demostración personalizada en 48 h</span></div>
+        <div class="dm-point"><span class="dm-point-icon">✅</span><span>Sin compromiso ni costo inicial</span></div>
+        <div class="dm-point"><span class="dm-point-icon">✅</span><span>Asesoría con especialista documental</span></div>
+        <div class="dm-point"><span class="dm-point-icon">✅</span><span>Adaptado a su sector y normativa</span></div>
+      </div>
+      <div class="dm-iso">ISO 15489 · ISO 16175 · ISO 30300</div>
+    </div>
+
+    <!-- RIGHT: form -->
+    <div id="demo-modal-right">
+
+      <!-- STEP 1: FORM -->
+      <div id="demo-step-form">
+        <div class="dm-form-title" id="demo-modal-title">Solicitar demostración</div>
+        <div class="dm-form-sub">Complete el formulario y nuestro equipo se pondrá en contacto en menos de 48 horas.</div>
+
+        <div class="dm-row">
+          <div class="dm-field">
+            <label class="dm-label">Nombre completo <span class="dm-req">*</span></label>
+            <input type="text" id="dm-nombre" class="dm-input" placeholder="Ej. María Rodríguez" autocomplete="name">
+            <div class="dm-err" id="err-nombre">Por favor ingrese su nombre.</div>
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Cargo <span class="dm-req">*</span></label>
+            <input type="text" id="dm-cargo" class="dm-input" placeholder="Ej. Gerente de Operaciones" autocomplete="organization-title">
+            <div class="dm-err" id="err-cargo">Por favor ingrese su cargo.</div>
+          </div>
+        </div>
+
+        <div class="dm-field">
+          <label class="dm-label">Empresa / Organización <span class="dm-req">*</span></label>
+          <input type="text" id="dm-empresa" class="dm-input" placeholder="Nombre de su organización" autocomplete="organization">
+          <div class="dm-err" id="err-empresa">Por favor ingrese su organización.</div>
+        </div>
+
+        <div class="dm-row">
+          <div class="dm-field">
+            <label class="dm-label">Correo electrónico <span class="dm-req">*</span></label>
+            <input type="email" id="dm-email" class="dm-input" placeholder="correo@empresa.com" autocomplete="email">
+            <div class="dm-err" id="err-email">Ingrese un correo electrónico válido.</div>
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Teléfono / WhatsApp</label>
+            <input type="tel" id="dm-telefono" class="dm-input" placeholder="+58 412 XXX-XXXX" autocomplete="tel">
+          </div>
+        </div>
+
+        <div class="dm-row">
+          <div class="dm-field">
+            <label class="dm-label">Sector <span class="dm-req">*</span></label>
+            <select id="dm-sector" class="dm-input dm-select">
+              <option value="">Seleccione su sector…</option>
+              <option>Banca y Finanzas</option>
+              <option>Sector Público</option>
+              <option>Salud</option>
+              <option>Educación Superior</option>
+              <option>Despacho Jurídico</option>
+              <option>Manufactura e Industria</option>
+              <option>Energía y Petróleo</option>
+              <option>Construcción</option>
+              <option>Comercio</option>
+              <option>Otro</option>
+            </select>
+            <div class="dm-err" id="err-sector">Seleccione un sector.</div>
+          </div>
+          <div class="dm-field">
+            <label class="dm-label">Tamaño de la organización</label>
+            <select id="dm-tamano" class="dm-input dm-select">
+              <option value="">Seleccione…</option>
+              <option>1 – 20 colaboradores</option>
+              <option>21 – 100 colaboradores</option>
+              <option>101 – 500 colaboradores</option>
+              <option>Más de 500 colaboradores</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="dm-field">
+          <label class="dm-label">¿Qué módulos le interesan más?</label>
+          <div class="dm-checks">
+            <label class="dm-check"><input type="checkbox" value="Retención y Disposición"> Retención y Disposición</label>
+            <label class="dm-check"><input type="checkbox" value="Auditoría e Informes"> Auditoría e Informes</label>
+            <label class="dm-check"><input type="checkbox" value="Workflow Documental"> Workflow Documental</label>
+            <label class="dm-check"><input type="checkbox" value="Seguridad y Roles"> Seguridad y Roles</label>
+            <label class="dm-check"><input type="checkbox" value="Preservación Digital"> Preservación Digital</label>
+            <label class="dm-check"><input type="checkbox" value="Búsqueda Avanzada"> Búsqueda Avanzada</label>
+          </div>
+        </div>
+
+        <div class="dm-field">
+          <label class="dm-label">Mensaje adicional</label>
+          <textarea id="dm-mensaje" class="dm-input dm-textarea" placeholder="Cuéntenos sobre sus necesidades documentales, retos actuales o cualquier detalle relevante…" rows="3"></textarea>
+        </div>
+
+        <div class="dm-field">
+          <label class="dm-label">¿Cómo prefiere ser contactado? <span class="dm-req">*</span></label>
+          <div class="dm-radios">
+            <label class="dm-radio"><input type="radio" name="dm-contacto" value="Correo electrónico" checked> Correo electrónico</label>
+            <label class="dm-radio"><input type="radio" name="dm-contacto" value="WhatsApp"> WhatsApp</label>
+            <label class="dm-radio"><input type="radio" name="dm-contacto" value="Llamada telefónica"> Llamada telefónica</label>
+            <label class="dm-radio"><input type="radio" name="dm-contacto" value="Videollamada"> Videollamada</label>
+          </div>
+        </div>
+
+        <div id="dm-global-err">Por favor corrija los campos marcados antes de continuar.</div>
+
+        <button class="dm-submit" id="dm-submit-btn" onclick="submitDemoForm()">
+          <span id="dm-btn-label">📋 Enviar solicitud</span>
+          <span id="dm-btn-spinner" style="display:none">⏳ Enviando…</span>
+        </button>
+        <p class="dm-privacy">Sus datos son confidenciales y solo serán usados para gestionar su solicitud de demostración.</p>
+      </div>
+
+      <!-- STEP 2: SUCCESS -->
+      <div id="demo-step-success" style="display:none">
+        <div class="dm-success-icon">✅</div>
+        <div class="dm-success-title">¡Solicitud enviada con éxito!</div>
+        <div class="dm-success-desc">Hemos recibido su información. Un especialista de SAGD se pondrá en contacto con <strong id="dm-success-email"></strong> en menos de <strong>48 horas hábiles</strong>.</div>
+        <div class="dm-success-ref">Referencia: <span id="dm-success-ref"></span></div>
+        <div class="dm-success-resumen" id="dm-success-resumen"></div>
+        <button class="dm-submit" onclick="closeDemoModal()" style="margin-top:28px">Cerrar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<style>
+/* ── MODAL OVERLAY ─── */
+#demo-modal-ov{
+  display:none;
+  position:fixed;inset:0;z-index:9000;
+  background:rgba(0,0,0,.72);
+  backdrop-filter:blur(10px);
+  align-items:center;justify-content:center;
+  padding:20px;
+  animation:dmFadeIn .25s ease;
+}
+#demo-modal-ov.open{display:flex}
+@keyframes dmFadeIn{from{opacity:0}to{opacity:1}}
+
+#demo-modal{
+  background:var(--navy2);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:20px;
+  width:100%;max-width:860px;
+  max-height:92vh;
+  display:flex;
+  box-shadow:0 32px 100px rgba(0,0,0,.65);
+  overflow:hidden;
+  position:relative;
+  animation:dmSlideUp .3s cubic-bezier(.2,.8,.3,1);
+}
+@keyframes dmSlideUp{from{transform:translateY(20px) scale(.97);opacity:0}to{transform:none;opacity:1}}
+
+#demo-modal-close{
+  position:absolute;top:16px;right:16px;z-index:10;
+  background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;width:32px;height:32px;
+  cursor:pointer;color:var(--text2);font-size:14px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+#demo-modal-close:hover{background:rgba(255,255,255,.13);color:#fff}
+
+/* LEFT PANEL */
+#demo-modal-left{
+  width:260px;flex-shrink:0;
+  background:linear-gradient(160deg,var(--navy3) 0%,var(--navy) 100%);
+  border-right:1px solid rgba(255,255,255,.07);
+  padding:40px 28px;
+  display:flex;flex-direction:column;
+  position:relative;overflow:hidden;
+}
+#demo-modal-left::before{
+  content:'';position:absolute;
+  top:-80px;right:-80px;width:220px;height:220px;border-radius:50%;
+  background:radial-gradient(circle,rgba(200,150,42,.1) 0%,transparent 70%);
+  pointer-events:none;
+}
+.dm-logo{font-size:2rem;margin-bottom:8px}
+.dm-brand{
+  font-family:'Playfair Display',serif;
+  font-size:1.6rem;font-weight:700;color:var(--gold2);
+}
+.dm-tagline{font-size:.78rem;color:var(--text3);margin-top:6px;line-height:1.5}
+.dm-divider{height:1px;background:rgba(255,255,255,.08);margin:24px 0}
+.dm-points{display:flex;flex-direction:column;gap:14px}
+.dm-point{display:flex;align-items:flex-start;gap:10px;font-size:.8rem;color:var(--text2);line-height:1.5}
+.dm-point-icon{color:var(--gold);flex-shrink:0;margin-top:1px}
+.dm-iso{
+  margin-top:auto;font-family:'IBM Plex Mono',monospace;
+  font-size:.62rem;color:var(--text3);letter-spacing:.06em;
+  padding-top:24px;border-top:1px solid rgba(255,255,255,.06);
+}
+
+/* RIGHT PANEL */
+#demo-modal-right{
+  flex:1;overflow-y:auto;padding:36px 36px 32px;
+}
+.dm-form-title{
+  font-family:'Playfair Display',serif;
+  font-size:1.5rem;font-weight:700;color:#fff;
+  margin-bottom:6px;
+}
+.dm-form-sub{font-size:.82rem;color:var(--text2);margin-bottom:24px;line-height:1.6}
+
+.dm-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.dm-field{margin-bottom:14px}
+.dm-label{
+  display:block;font-size:.72rem;font-weight:600;
+  color:var(--text);margin-bottom:5px;letter-spacing:.03em;
+}
+.dm-req{color:#f87171;margin-left:2px}
+.dm-input{
+  width:100%;padding:10px 13px;
+  background:rgba(255,255,255,.05);
+  border:1.5px solid rgba(255,255,255,.1);
+  border-radius:8px;
+  font-family:'IBM Plex Sans',sans-serif;font-size:.85rem;
+  color:var(--text);outline:none;
+  transition:border-color .18s,background .18s,box-shadow .18s;
+}
+.dm-input::placeholder{color:var(--text3)}
+.dm-input:focus{
+  border-color:var(--gold);
+  background:rgba(200,150,42,.05);
+  box-shadow:0 0 0 3px rgba(200,150,42,.12);
+}
+.dm-input.error{
+  border-color:#f87171 !important;
+  box-shadow:0 0 0 3px rgba(248,113,113,.12) !important;
+}
+.dm-input.ok{border-color:rgba(26,122,74,.6)}
+select.dm-input,.dm-select{
+  cursor:pointer;
+  background-color:rgba(255,255,255,.05);
+  color:var(--text);
+}
+select.dm-input option{background:#0f1e36;color:#dce8f5}
+textarea.dm-input{resize:vertical;min-height:72px}
+.dm-err{
+  font-size:.7rem;color:#f87171;margin-top:4px;
+  display:none;
+}
+.dm-err.show{display:block}
+
+/* Checkboxes */
+.dm-checks{
+  display:grid;grid-template-columns:1fr 1fr;gap:6px;
+  margin-top:4px;
+}
+.dm-check{
+  display:flex;align-items:center;gap:7px;
+  font-size:.78rem;color:var(--text2);cursor:pointer;
+  padding:6px 10px;border-radius:6px;
+  border:1px solid rgba(255,255,255,.07);
+  background:rgba(255,255,255,.02);
+  transition:all .15s;
+}
+.dm-check:hover{background:rgba(200,150,42,.07);border-color:rgba(200,150,42,.2)}
+.dm-check input{accent-color:var(--gold);cursor:pointer}
+
+/* Radios */
+.dm-radios{
+  display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;
+}
+.dm-radio{
+  display:flex;align-items:center;gap:6px;
+  font-size:.78rem;color:var(--text2);cursor:pointer;
+  padding:7px 14px;border-radius:20px;
+  border:1px solid rgba(255,255,255,.1);
+  background:rgba(255,255,255,.03);
+  transition:all .15s;
+}
+.dm-radio:hover{border-color:rgba(200,150,42,.3);background:rgba(200,150,42,.07)}
+.dm-radio input{accent-color:var(--gold);cursor:pointer}
+
+/* Global error */
+#dm-global-err{
+  background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.25);
+  border-radius:8px;padding:10px 14px;
+  font-size:.78rem;color:#fca5a5;
+  margin-bottom:14px;display:none;
+}
+#dm-global-err.show{display:block}
+
+/* Submit button */
+.dm-submit{
+  width:100%;padding:13px;
+  background:var(--gold);border:none;border-radius:10px;
+  font-family:'IBM Plex Sans',sans-serif;font-size:.9rem;font-weight:700;
+  color:#fff;cursor:pointer;
+  transition:all .2s;
+  box-shadow:0 4px 16px rgba(200,150,42,.35);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.dm-submit:hover{background:var(--gold2);box-shadow:0 8px 28px rgba(200,150,42,.45);transform:translateY(-1px)}
+.dm-submit:active{transform:scale(.98)}
+.dm-submit:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.dm-privacy{
+  text-align:center;font-size:.68rem;color:var(--text3);
+  margin-top:12px;line-height:1.5;
+}
+
+/* Success screen */
+#demo-step-success{
+  display:flex;flex-direction:column;align-items:center;
+  text-align:center;padding:20px 0;
+  animation:dmFadeIn .4s ease;
+}
+.dm-success-icon{font-size:3.5rem;margin-bottom:20px}
+.dm-success-title{
+  font-family:'Playfair Display',serif;
+  font-size:1.6rem;font-weight:700;color:#fff;
+  margin-bottom:14px;
+}
+.dm-success-desc{
+  font-size:.875rem;color:var(--text2);line-height:1.75;
+  max-width:400px;margin-bottom:20px;
+}
+.dm-success-ref{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:.7rem;color:var(--gold);
+  background:var(--gold-dim2);border:1px solid rgba(200,150,42,.2);
+  padding:6px 16px;border-radius:20px;margin-bottom:24px;
+}
+.dm-success-resumen{
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:12px;padding:18px 24px;text-align:left;
+  width:100%;max-width:440px;
+  font-size:.78rem;color:var(--text2);
+  display:flex;flex-direction:column;gap:8px;
+}
+.dm-resumen-row{display:flex;gap:8px}
+.dm-resumen-key{color:var(--text3);min-width:120px;flex-shrink:0}
+.dm-resumen-val{color:var(--text);font-weight:500}
+
+/* Responsive modal */
+@media(max-width:700px){
+  #demo-modal{flex-direction:column;max-height:96vh}
+  #demo-modal-left{width:100%;padding:24px;flex-direction:row;flex-wrap:wrap;gap:12px}
+  .dm-points{display:none}
+  .dm-iso{margin-top:0;padding-top:0;border:none}
+  #demo-modal-right{padding:24px}
+  .dm-row{grid-template-columns:1fr}
+  .dm-checks{grid-template-columns:1fr}
+}
+</style>
+
+<script>
+// ── MODAL OPEN / CLOSE ──
+function openDemoModal(source){
+  const ov = document.getElementById('demo-modal-ov');
+  ov.classList.add('open');
+  document.body.style.overflow='hidden';
+  // Pre-fill contact method if coming from phone button
+  if(source==='phone'){
+    const phoneRadio = document.querySelector('input[name="dm-contacto"][value="Llamada telefónica"]');
+    if(phoneRadio) phoneRadio.checked = true;
+  }
+  // focus first field
+  setTimeout(()=>document.getElementById('dm-nombre').focus(),120);
+}
+
+function closeDemoModal(){
+  document.getElementById('demo-modal-ov').classList.remove('open');
+  document.body.style.overflow='';
+}
+
+// Close on overlay click
+document.getElementById('demo-modal-ov').addEventListener('click',function(e){
+  if(e.target===this) closeDemoModal();
+});
+
+// Close on Escape
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') closeDemoModal();
+});
+
+// ── REAL-TIME VALIDATION ──
+function validateField(input, errId, test){
+  const ok = test(input.value.trim());
+  input.classList.toggle('error', !ok);
+  input.classList.toggle('ok', ok);
+  const errEl = document.getElementById(errId);
+  if(errEl) errEl.classList.toggle('show', !ok);
+  return ok;
+}
+
+const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+document.getElementById('dm-nombre').addEventListener('blur',function(){
+  validateField(this,'err-nombre',v=>v.length>=2);
+});
+document.getElementById('dm-cargo').addEventListener('blur',function(){
+  validateField(this,'err-cargo',v=>v.length>=2);
+});
+document.getElementById('dm-empresa').addEventListener('blur',function(){
+  validateField(this,'err-empresa',v=>v.length>=2);
+});
+document.getElementById('dm-email').addEventListener('blur',function(){
+  validateField(this,'err-email',v=>emailRe.test(v));
+});
+document.getElementById('dm-sector').addEventListener('change',function(){
+  validateField(this,'err-sector',v=>v!=='');
+});
+
+// Live feedback while typing email
+document.getElementById('dm-email').addEventListener('input',function(){
+  if(this.value.length>5) validateField(this,'err-email',v=>emailRe.test(v));
+});
+
+// ── SUBMIT ──
+function submitDemoForm(){
+  const nombre  = document.getElementById('dm-nombre').value.trim();
+  const cargo   = document.getElementById('dm-cargo').value.trim();
+  const empresa = document.getElementById('dm-empresa').value.trim();
+  const email   = document.getElementById('dm-email').value.trim();
+  const sector  = document.getElementById('dm-sector').value;
+
+  const v1 = validateField(document.getElementById('dm-nombre'), 'err-nombre', v=>v.length>=2);
+  const v2 = validateField(document.getElementById('dm-cargo'),  'err-cargo',  v=>v.length>=2);
+  const v3 = validateField(document.getElementById('dm-empresa'),'err-empresa',v=>v.length>=2);
+  const v4 = validateField(document.getElementById('dm-email'),  'err-email',  v=>emailRe.test(v));
+  const v5 = validateField(document.getElementById('dm-sector'), 'err-sector', v=>v!=='');
+
+  const globalErr = document.getElementById('dm-global-err');
+  if(!v1||!v2||!v3||!v4||!v5){
+    globalErr.classList.add('show');
+    // Scroll to first error
+    const firstErr = document.querySelector('.dm-input.error');
+    if(firstErr) firstErr.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  globalErr.classList.remove('show');
+
+  // ── Recoger todos los campos ──
+  const telefono     = document.getElementById('dm-telefono').value.trim();
+  const tamano       = document.getElementById('dm-tamano').value;
+  const mensaje      = document.getElementById('dm-mensaje').value.trim();
+  const contactoPref = document.querySelector('input[name="dm-contacto"]:checked')?.value || 'Correo electrónico';
+  const modulos      = [...document.querySelectorAll('.dm-checks input:checked')].map(c=>c.value);
+
+  // ── Estado: enviando ──
+  const btn = document.getElementById('dm-submit-btn');
+  btn.disabled = true;
+  document.getElementById('dm-btn-label').style.display='none';
+  document.getElementById('dm-btn-spinner').style.display='flex';
+
+  // ── POST al backend ──
+  // ⚙️  Cambie esta URL por la dirección real de su servidor
+  const API_URL = 'http://localhost:3000/api/demo';
+
+  fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      nombre, cargo, empresa, email,
+      telefono, sector,
+      tamano, modulos, mensaje,
+      contacto: contactoPref,
+    }),
+  })
+  .then(async res => {
+    const json = await res.json();
+    if (!res.ok || !json.ok) throw new Error(json.error || 'Error del servidor');
+    return json;
+  })
+  .then(json => {
+    // ── Éxito: mostrar pantalla de confirmación ──
+    document.getElementById('demo-step-form').style.display='none';
+    const success = document.getElementById('demo-step-success');
+    success.style.display='flex';
+
+    document.getElementById('dm-success-email').textContent = email;
+    document.getElementById('dm-success-ref').textContent   = json.ref;
+
+    const rows = [
+      ['Nombre',   nombre],
+      ['Cargo',    cargo],
+      ['Empresa',  empresa],
+      ['Sector',   sector],
+      tamano   ? ['Tamaño',   tamano]              : null,
+      telefono ? ['Teléfono', telefono]            : null,
+      ['Contacto preferido', contactoPref],
+      modulos.length ? ['Módulos de interés', modulos.join(', ')] : null,
+    ].filter(Boolean);
+
+    document.getElementById('dm-success-resumen').innerHTML = rows.map(([k,v])=>`
+      <div class="dm-resumen-row">
+        <span class="dm-resumen-key">${k}</span>
+        <span class="dm-resumen-val">${v}</span>
+      </div>
+    `).join('');
+  })
+  .catch(err => {
+    // ── Error: restaurar botón y mostrar mensaje ──
+    btn.disabled = false;
+    document.getElementById('dm-btn-label').style.display='flex';
+    document.getElementById('dm-btn-spinner').style.display='none';
+    const globalErr = document.getElementById('dm-global-err');
+    globalErr.textContent = '⚠️ No se pudo enviar la solicitud: ' + err.message +
+      '. Intente de nuevo o escríbanos a info@sagd.ve';
+    globalErr.classList.add('show');
+  });
+}
+</script>
+</body>
+</html>
